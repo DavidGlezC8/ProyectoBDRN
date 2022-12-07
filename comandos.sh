@@ -130,21 +130,27 @@ MATCH (p:Products),(c:Brands)
 WHERE p.brand = c.brand
 CREATE (c)-[:PRODUCES]->(p);
 
+#marca más popular por rank de productos
+MATCH (b:Brands)
+WITH b
+ORDER BY b.brand
+MATCH (b:Brands)-[:BRANDS]->(p:Products), (r:Ranks)-[:RANKING]->(p:Products)
+WITH b.brand as brand, r.rank as ranking, count(b.brand) as popularity
+ORDER BY popularity DESC
+RETURN head(COLLECT(distinct brand)), ranking, max(popularity) as most_popular
+ORDER BY ranking;
+
+#distribución de rank por owner
 MATCH (o:Owners)-[:OWNS]->(p:Products), (p:Products)-[:RANKED]->(r:Ranks)
 WITH o.owner as owner, r.rank as rank, count( r.rank) as num_rank
 RETURN owner, rank, num_rank 
 ORDER BY rank;
 
-
+#precio promedio de productos por marca
 MATCH (b:Brands)-[:PRODUCES]->(p:Products), (p:Products)-[:RANKED]->(r:Ranks)
 where p.price is not null and p.price>=0
 RETURN b.brand as brand, avg(p.price) as avg_price
 order by avg_price desc;
-
-MATCH (b:Brands)-[:PRODUCES]->(p:Products), (p:Products)-[:RANKED]->(r:Ranks)
-WITH b.brand as brand, r.rank as rank, count(*) as num_rank
-RETURN  rank, max(num_rank) as avg_price,brand
-order by avg_price;
 
 MATCH (n:Products)
 DETACH DELETE n
